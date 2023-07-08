@@ -1,9 +1,9 @@
 @import url("https://fonts.googleapis.com/css?family=Plus+Jakarta+Sans");
-* {
+ *{
   font-family: Plus Jakarta Sans;
 }
-body {
-  margin: 0;
-}
-
-
+/* .button-toggle{
+  background-color: red;
+  height: 100px;
+  width: 100px;
+} */

@@ -1,0 +1,39 @@
+.board-wrapper{
+    font-family: Plus Jakarta Sans ;
+    font-weight: 700;
+}
+.task-name{
+    color: #635FC7;
+    font-size: 15px;
+
+
+}
+
+.subtasks{
+    color: #828FA3;
+    font-size: 12px;
+}
+
+.list-header{
+    margin: 0;
+    text-transform: uppercase;
+    color:#828FA3;
+    font-size: 12px;
+    line-height: 15px;
+    letter-spacing: 2.4px;
+}
+
+.list-header-wrapper{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.new-column-btn{
+    border-radius: 3px;
+    height: auto;
+    padding: 40px;
+    margin: 35px 20px 0 20px;
+    color: #828FA3;
+    font-size: 24px;
+
+}

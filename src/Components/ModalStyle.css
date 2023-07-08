@@ -1,0 +1,108 @@
+.modal-wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.subtask {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.subtask-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.x-delete {
+  cursor: pointer;
+  color: #828fa3;
+}
+.x-delete:hover {
+  color: #ea5555;
+}
+label {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 15px;
+  margin-top: 20px;
+  margin-bottom: 10px;
+}
+
+button {
+  border: 0;
+  border-radius: 25px;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 13px 0;
+  margin-top: 10px;
+  cursor: pointer;
+}
+
+.create-task {
+  margin-top: 20px;
+  background-color: #635fc7;
+  color: #fff;
+}
+.lightMode {
+  background-color: #635fc71a;
+  color: #635fc7;
+}
+.darkMode {
+  background-color: #fff;
+  color: #635fc7;
+}
+.lightMode:hover {
+  background-color: #635fc740;
+}
+
+.create-task:hover {
+  background-color: #a8a4ff;
+}
+
+.dark-label {
+  color: #fff;
+}
+
+.light-label {
+  color: #828fa3;
+}
+
+.delete-wrapper {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+.delete-btn {
+  background-color: #ea5555;
+  width: 100%;
+  color: #fff;
+}
+.delete-btn:hover {
+  background-color: #ff9898;
+  width: 100%;
+  color: #fff;
+}
+
+.lightMode-cancel-btn {
+  width: 100%;
+  color: #635fc7;
+  background-color: #635fc71a;
+}
+
+.darkMode-cancel-btn {
+  width: 100%;
+  color: #635fc7;
+  background-color: #fff;
+}
+.lightMode-cancel-btn:hover {
+  width: 100%;
+  color: #635fc7;
+  background-color: #635fc740;
+}
+
+.MuiInputBase-root{
+  border: 2px solid #828FA340 !important;
+}
