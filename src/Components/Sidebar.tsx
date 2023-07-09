@@ -28,13 +28,13 @@ import {
   openTaskModal,
   openBoardModal,
   openDeleteModal,
+  editBoardModal,
 } from "../features/modalSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchTrelloData } from "../features/TrelloDataSlice";
 import BoardModalPopUp from "./BoardModal";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
-import DeleteModal from "./DeleteModal";
 import { selectBoardId, selectBoardName } from "../features/boardSlice";
 
 const drawerWidth = 300;
@@ -90,17 +90,23 @@ const DrawerHeader = styled("div")(({ theme }) => ({
 export default function Sidebar(props: any) {
   const [open, setOpen] = React.useState(false);
   const dispatch = useDispatch();
-  const theme = useSelector((state: RootState) => state.theme);
-  const { boards } = useSelector((state: RootState) => state.trello);
-  const selectedBoardName = useSelector((state:RootState)=>state.board.selectedBoardName)
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const menuOpen = Boolean(anchorEl);
 
-  const handleBoardName = (boardName: string,boardId:any) => {
+  const theme = useSelector((state: RootState) => state.theme);
+  const { boards } = useSelector((state: RootState) => state.trello);
+  const { selectedBoardName } = useSelector(
+    (state: RootState) => state.board
+  );
+
+  // console.log(cards)
+
+
+  const handleBoardName = (boardName: string, boardId: any) => {
     dispatch(selectBoardName(boardName));
     dispatch(selectBoardId(boardId));
   };
-  
+
   const handleMenuClose = () => {
     setAnchorEl(null);
   };
@@ -109,8 +115,15 @@ export default function Sidebar(props: any) {
     store.dispatch(fetchTrelloData());
   }, []);
   const handleTaskOpen = () => dispatch(openTaskModal());
-  const handleBoardOpen = () => dispatch(openBoardModal());
-  const handleDeleteModal = () => dispatch(openDeleteModal());
+
+  const handleBoardOpen = () => {
+    dispatch(openBoardModal());
+  };
+
+  const handleDeleteModal = () => {
+    dispatch(openDeleteModal());
+    handleMenuClose();
+  };
 
   const handleMenuOpen = (e: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(e.currentTarget);
@@ -122,6 +135,13 @@ export default function Sidebar(props: any) {
 
   const handleDrawerClose = () => {
     setOpen(false);
+  };
+
+  const handleEditModal = () => {
+    dispatch(editBoardModal());
+    
+    handleMenuClose();
+        
   };
 
   return (
@@ -172,6 +192,7 @@ export default function Sidebar(props: any) {
             <div className="addNewTaskBtn-options">
               <Button
                 onClick={handleTaskOpen}
+                disabled={selectedBoardName?false:true}
                 sx={{
                   backgroundColor: "#635FC7",
                   fontSize: "15px",
@@ -184,6 +205,10 @@ export default function Sidebar(props: any) {
                   "&:hover": {
                     backgroundColor: "#A8A4FF",
                   },
+                  "&:disabled":{
+                    backgroundColor:'#d8d7f1',
+                    color:'#fff'
+                  }
                 }}
               >
                 + Add New Task
@@ -261,10 +286,11 @@ export default function Sidebar(props: any) {
           ALL BOARDS <span>({boards.length})</span>
         </ListSubheader>
         <List sx={{ mr: 3 }}>
-          {boards.map((text) => (
+          {boards.map((text) => 
+          (
             <ListItem key={text.id} disablePadding sx={{ pt: 1 }}>
               <ListItemButton
-                onClick={()=>handleBoardName(text.name,text.id)}
+                onClick={() => handleBoardName(text.name, text.id)}
                 className="boards-list"
                 sx={{
                   height: "50px",
@@ -337,6 +363,10 @@ export default function Sidebar(props: any) {
         open={open}
         sx={{
           minHeight: "100vh",
+          backgroundColor: theme === "dark" ? "#20212c" : "#f4f7fd",
+          display:'flex',
+          justifyContent:'center',
+          alignItems: selectedBoardName?'start':'center'
         }}
       >
         {props.children}
@@ -357,13 +387,18 @@ export default function Sidebar(props: any) {
               },
             }}
           >
-            <MenuItem className="edit-board">Edit Board</MenuItem>
+            <MenuItem
+              className="edit-board"
+              disabled={selectedBoardName ? false : true}
+              onClick={handleEditModal}
+            >
+              Edit Board
+            </MenuItem>
             <MenuItem className="delete-board" onClick={handleDeleteModal}>
               Delete Board
             </MenuItem>
           </Menu>
         </div>
-        <DeleteModal/>
       </Main>
     </Box>
   );

@@ -1,38 +1,69 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
+import { RootState } from "../Store/store";
 
 interface TrelloState {
-  boards: any[];
+  boards: Board[];
   loading: boolean;
   error: string | null;
+  cards: Cards[];
+  lists: List[];
 }
 
-interface Card {
+export interface Cards {
   id: string;
   name: string;
+  listId: string;
 }
 
 interface List {
   id: string;
   name: string;
-  cards: Card[];
+  boardId: string;
+  cardIds: string[];
 }
 
 interface Board {
   id: string;
   name: string;
-  lists: List[];
+  listIds: string[];
+  lists: string[];
 }
 
 const initialState: TrelloState = {
   boards: [],
   loading: false,
   error: null,
+  cards: [],
+  lists: [],
 };
 
 const APIKey = "3685b75fa9e12796a15db0b2ca8a0b55";
 const APIToken =
   "ATTA592612972790619de325103dddafc4e55f7f35faabf736efd4f3b353d7e34c951047D34B";
 
+/*======================================= Board CRUD =======================================*/
+//Create Board
+export const createBoard = createAsyncThunk(
+  "trello/addBoard",
+  async (boardName: string) => {
+    try {
+      const apiBoardPost = `https://api.trello.com/1/boards/?&name=${boardName}&defaultLists=false&key=${APIKey}&token=${APIToken}`;
+      const response = await fetch(apiBoardPost, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: boardName }),
+      });
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      throw new Error("Failed to add board");
+    }
+  }
+);
+
+//Read Board
 export const fetchTrelloData = () => async (dispatch: any) => {
   try {
     dispatch(setLoading(true));
@@ -48,23 +79,28 @@ export const fetchTrelloData = () => async (dispatch: any) => {
   }
 };
 
-export const createBoard = (board: any) => async (dispatch: any) => {
-  try {
-    dispatch(setLoading(true));
-    const apiBoardPost = `https://api.trello.com/1/boards/?name=${board.name}&key=${APIKey}&token=${APIToken}`;
-    await fetch(apiBoardPost, {
-      method: "POST",
-      body: JSON.stringify(board),
-    });
+//Update Board
+export const updateBoardName =
+  (boardId: any, name: any) => async (dispatch: any) => {
+    try {
+      dispatch(setLoading(true));
+      const apiUpdateBoard = `https://api.trello.com/1/boards/${boardId}?name=${name}&key=${APIKey}&token=${APIToken}`;
+      await fetch(apiUpdateBoard, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name }),
+      });
+      dispatch(fetchTrelloData());
+    } catch (error) {
+      dispatch(setError("Failed to update board"));
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
 
-    dispatch(fetchTrelloData());
-  } catch (error) {
-    dispatch(setError("Failed to add new board"));
-  } finally {
-    dispatch(setLoading(false));
-  }
-};
-
+//Delete Board
 export const deleteBoard = (id: any) => async (dispatch: any) => {
   try {
     dispatch(setLoading(true));
@@ -79,21 +115,33 @@ export const deleteBoard = (id: any) => async (dispatch: any) => {
     dispatch(setLoading(false));
   }
 };
+/*=========================================================================================*/
 
-export const listBoard = (boardId: any) => async (dispatch: any) => {
-  try {
-    dispatch(setLoading(true));
-    const apiLists = `https://api.trello.com/1/boards/${boardId}/lists?key=${APIKey}&token=${APIToken}`;
-    await fetch(apiLists, {
-      method: "DELETE",
-    });
-    dispatch(fetchTrelloData());
-  } catch (error) {
-    dispatch(setError("Failed to fetch lists"));
-  } finally {
-    dispatch(setLoading(false));
+/*======================================= List CRUD =======================================*/
+
+//Create List
+export const addListToBoard = createAsyncThunk(
+  "trello/addListToBoard",
+  async ({ boardId, listName }: { boardId: string; listName: string }) => {
+    try {
+      const apiListPost = `https://api.trello.com/1/boards/${boardId}/lists?name=${listName}&key=${APIKey}&token=${APIToken}`;
+
+      const response = await fetch(apiListPost, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: listName }),
+      });
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      throw new Error("Failed to add list");
+    }
   }
-};
+);
+
+//Read Lists
 export const fetchLists =
   (boardId: any) => async (dispatch: any, getState: any) => {
     try {
@@ -119,65 +167,127 @@ export const fetchLists =
       dispatch(setLoading(false));
     }
   };
-// export const fetchCardsInList =
-//   (listId: any) => async (dispatch: any, getState: any) => {
-//     try {
-//       dispatch(setLoading(true));
 
-//       const apiLists = `https://api.trello.com/1/lists/${listId}/cards?key=${APIKey}&token=${APIToken}`;
-//       const response = await fetch(apiLists);
-//       const data = await response.json();
-//       const { lists } = getState().trello;
-//       const list = lists.find((list: any) => list.id === listId);
-
-//       if (list) {
-//         const updatedBoard = {
-//           ...list,
-//           lists: data,
-//         };
-//         dispatch(updateBoard(updatedBoard));
-//       }
-//       dispatch(setError(null));
-//     } catch (error) {
-//       dispatch(setError("Failed to fetch lists"));
-//     } finally {
-//       dispatch(setLoading(false));
-//     }
-//   };
-
-export const fetchCards = (listId: string) => async (dispatch: any) => {
-  try {
-    dispatch(setLoading(true));
-    
-    const apiCards = `https://api.trello.com/1/lists/${listId}/cards?key=${APIKey}&token=${APIToken}`;
-    const response = await fetch(apiCards);
-    const data = await response.json();
-
-    dispatch(updateListCards({ listId, cards: data }));
-    dispatch(setLoading(false));
-  } catch (error) {
-    dispatch(setError('Failed to fetch cards'));
-    dispatch(setLoading(false));
+//Update List
+export const updateList = createAsyncThunk(
+  "trello/updateList",
+  async ({ listId, listName }: { listId: string; listName: string }) => {
+    try {
+      const apiUpdateList = `https://api.trello.com/1/lists/${listId}?name=${listName}&key=${APIKey}&token=${APIToken}`;
+      const response = await fetch(apiUpdateList, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: listName }),
+      });
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      throw new Error("Failed to update list");
+    }
   }
-};
+);
 
-export const addList = (list: any) => async (dispatch: any) => {
-  try {
-    dispatch(setLoading(true));
-    const apiListPost = `https://api.trello.com/1/lists?name=${list.name}&idBoard=5abbe4b7ddc1b351ef961414&key=${APIKey}&token=${APIToken}`;
-
-    await fetch(apiListPost, {
-      method: "POST",
-      body: JSON.stringify(list),
-    });
-
-    dispatch(fetchTrelloData());
-  } catch (error) {
-    dispatch(setError("Failed to add new List"));
-  } finally {
-    dispatch(setLoading(false));
+//Archive List === (Delete List)
+export const archiveList = createAsyncThunk(
+  "trello/updateList",
+  async (listId: string) => {
+    try {
+      const apiArchiveList = `https://api.trello.com/1/lists/${listId}?closed=true&key=${APIKey}&token=${APIToken}`;
+      const response = await fetch(apiArchiveList, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      throw new Error("Failed to update list");
+    }
   }
-};
+);
+
+/*=========================================================================================*/
+
+/*======================================= Cards CRUD =======================================*/
+//Create Card
+export const createCard = createAsyncThunk(
+  "trello/createCard",
+  async ({ listId, cardName }: { listId: string; cardName: string }) => {
+    try {
+      const apiAddCard = `https://api.trello.com/1/cards?idList=${listId}&name=${cardName}&key=${APIKey}&token=${APIToken}`;
+      const response = await fetch(apiAddCard, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: cardName }),
+      });
+      const newCard = await response.json();
+
+      return newCard;
+    } catch (error) {
+      throw new Error("Failed to create card");
+    }
+  }
+);
+
+//Read Cards
+export const fetchCards = createAsyncThunk(
+  "trello/fetchCards",
+  async (boardId: any) => {
+    try {
+      const apiCards = `https://api.trello.com/1/boards/${boardId}/cards?key=${APIKey}&token=${APIToken}`;
+      const response = await fetch(apiCards);
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      throw new Error("Failed to fetch cards");
+    }
+  }
+);
+
+//Update Card
+export const updateCardList = createAsyncThunk(
+  "trello/updateCardList",
+  async ({ cardId, newListId }: { cardId: string; newListId: string }) => {
+    try {
+      const apiUpdateCardList = `https://api.trello.com/1/cards/${cardId}?idList=${newListId}&key=${APIKey}&token=${APIToken}`;
+      const response = await fetch(apiUpdateCardList, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ listId: newListId }),
+      });
+      const updatedCard = await response.json();
+
+      return updatedCard;
+    } catch (error) {
+      throw new Error("Failed to update card list");
+    }
+  }
+);
+
+//Delete Card
+export const deleteCard = createAsyncThunk(
+  "trello/deleteCard",
+  async (cardId: string) => {
+    try {
+      const apiCardDelete = `https://api.trello.com/1/cards/${cardId}?key=${APIKey}&token=${APIToken}`;
+      await fetch(apiCardDelete, {
+        method: "DELETE",
+      });
+      return cardId;
+    } catch (error) {
+      throw new Error("Failed to delete card");
+    }
+  }
+);
+
+/*=========================================================================================*/
 
 const trelloSlice = createSlice({
   name: "trello",
@@ -192,6 +302,7 @@ const trelloSlice = createSlice({
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
     },
+
     updateBoard: (state, action: PayloadAction<any>) => {
       const { payload } = action;
       const boardIndex = state.boards.findIndex(
@@ -216,27 +327,101 @@ const trelloSlice = createSlice({
         state.boards[boardIndex].lists.push(list);
       }
     },
-    updateListCards: (
-      state,
-      action: PayloadAction<{ listId: string; cards: Card[] }>
-    ) => {
-      const { listId, cards } = action.payload;
-      const lists = state.boards.flatMap((board) => board.lists);
-      const list = lists.find((list) => list.id === listId);
-      if (list) {
-        list.cards = cards;
-      }
-    },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(createBoard.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createBoard.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+        state.boards.push(action.payload);
+      })
+      .addCase(createBoard.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || "Failed to add board";
+      })
+      .addCase(addListToBoard.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(addListToBoard.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+        state.lists.push(action.payload); // Add the new list to the state
+      })
+      .addCase(addListToBoard.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || "Failed to add list";
+      })
+      .addCase(fetchCards.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchCards.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+        state.cards = action.payload;
+      })
+      .addCase(fetchCards.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || "Failed to fetch cards";
+      })
+      .addCase(createCard.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createCard.fulfilled, (state, action) => {
+        const newCard = action.payload;
+        state.cards.push(newCard);
+
+        const list = state.lists.find((list) => list.id === newCard.listId);
+        if (list) {
+          list.cardIds.push(newCard.id);
+        }
+
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(createCard.rejected, (state) => {
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(deleteCard.fulfilled, (state, action) => {
+        const cardId = action.payload;
+        state.cards = state.cards.filter((card) => card.id !== cardId);
+
+        const list = state.lists.find((list) => list.cardIds.includes(cardId));
+        if (list) {
+          list.cardIds = list.cardIds.filter((id) => id !== cardId);
+        }
+
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(updateCardList.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateCardList.fulfilled, (state, action) => {
+        const updatedCard = action.payload;
+        const existingCardIndex = state.cards.findIndex(
+          (card) => card.id === updatedCard.id
+        );
+
+        if (existingCardIndex !== -1) {
+          state.cards[existingCardIndex] = updatedCard;
+        }
+        state.loading = false;
+        state.error = null;
+      });
   },
 });
 
-export const {
-  setLoading,
-  setBoards,
-  setError,
-  addBoard,
-  updateBoardList,
-  updateBoard,
-  updateListCards,
-} = trelloSlice.actions;
+export const selectCardsByListId = (listId: string) => (state: RootState) =>
+  state.trello.cards.filter((card: any) => card.listId === listId);
+export const { setLoading, setBoards, setError, updateBoardList, updateBoard } =
+  trelloSlice.actions;
 export default trelloSlice.reducer;

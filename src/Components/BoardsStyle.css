@@ -5,8 +5,6 @@
 .task-name{
     color: #635FC7;
     font-size: 15px;
-
-
 }
 
 .subtasks{
@@ -30,10 +28,18 @@
 }
 .new-column-btn{
     border-radius: 3px;
+    width: 280px;
     height: auto;
     padding: 40px;
-    margin: 35px 20px 0 20px;
+    margin: 40px 20px 0 0px;
     color: #828FA3;
     font-size: 24px;
 
 }
+.grid{
+    display: flex;
+    flex-direction: column;
+    gap:20px;
+    width: 280px;
+}
+

@@ -1,3 +1,5 @@
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
 import * as React from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
@@ -6,10 +8,12 @@ import TextField from "@mui/material/TextField";
 import "../Components/ModalStyle.css";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
-import Select, { SelectChangeEvent } from "@mui/material/Select";
-import { RootState } from "../Store/store";
+import Select from "@mui/material/Select";
+import { RootState, store } from "../Store/store";
 import { closeTaskModal } from "../features/modalSlice";
 import { useDispatch, useSelector } from "react-redux";
+import { createCard } from "../features/TrelloDataSlice";
+import { registerSchema } from "../schema/formSchema";
 
 const style = {
   position: "absolute" as "absolute",
@@ -32,28 +36,41 @@ const placeholderStyle = {
 export default function ModalPopUp() {
   const dispatch = useDispatch();
   const theme = useSelector((state: RootState) => state.theme);
+  const [listId, setListId] = React.useState("");
+  const [cardName, setCardName] = React.useState("");
+
+  const { selectedBoardId } = useSelector((state: RootState) => state.board);
+
+  const { boards } = useSelector((state: RootState) => state.trello);
+  const getSelectedBoard = boards.find((board) => board.id === selectedBoardId);
 
   const isTaskModalOpen = useSelector(
     (state: RootState) => state.modal.isTaskModalOpen
   );
-  const [status, setStatus] = React.useState("Todo");
 
   const handleClose = () => dispatch(closeTaskModal());
 
-  const handleChange = (event: SelectChangeEvent) => {
-    setStatus(event.target.value as string);
-  };
-
-  const taskModel = (isEdit: boolean) => {
-    if (isEdit === true) {
-      return "Edit Task";
-    } else {
-      return "Add New Task";
-    }
-  };
-
   const labelClassName = `${theme === "dark" ? "dark-label" : "light-label"}`;
-  // const TextFieldStyle = `${theme==='dark'?''}`
+
+  const handleCardNameChange = (e: any) => {
+    setCardName(e.target.value);
+  };
+
+  const handleListSelect = (e: any) => {
+    setListId(e.target.value);
+  };
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({ resolver: yupResolver(registerSchema) });
+
+  const onSubmit = (listId: any) => {
+    store.dispatch(createCard({ listId: listId, cardName }));
+    setCardName("");
+    handleClose();
+  };
 
   return (
     <div>
@@ -68,91 +85,71 @@ export default function ModalPopUp() {
             ...style,
             bgcolor: theme === "dark" ? "#2B2C37" : "background.paper",
           }}
+          component="form"
+          onSubmit={handleSubmit(()=>onSubmit(listId))}
         >
           <Typography variant="h6" sx={{ fontWeight: "700", fontSize: "18px" }}>
-            {taskModel(false)}
+            Add New Task
           </Typography>
           <div className="modal-wrapper">
             <label className={labelClassName} htmlFor="title">
               Title
             </label>
             <TextField
+              {...register('title')}
+              name="title"
+              error={!!errors.title}
+              helperText={errors.title?.message}
               placeholder="e.g. Take coffee break"
-              id="outlined-basic"
+              id="title"
               variant="outlined"
               size="small"
+              value={cardName}
+              onChange={handleCardNameChange}
               InputProps={{
-                style: placeholderStyle,
+                style: {
+                  ...placeholderStyle,
+                  color: theme === "dark" ? "#fff" : "#000112",
+                },
               }}
             />
-            <label className={labelClassName} htmlFor="description">
-              Description
-            </label>
-            <TextField
-              placeholder="e.g. It’s always good to take a break. This 15 minute break will recharge the batteries a little."
-              id="outlined-basic"
-              variant="outlined"
-              multiline={true}
-              rows={4}
-              InputProps={{
-                style: {...placeholderStyle, color:theme==='dark'?'red': 'blue'}
-              }}
-            />
-            <label className={labelClassName} htmlFor="Subtasks">
-              Substasks
-            </label>
-            <div className="subtask-list">
-              <div className="subtask">
-                <TextField
-                  placeholder="e.g. Make coffee"
-                  id="outlined-basic"
-                  variant="outlined"
-                  size="small"
-                  sx={{ width: "100%" }}
-                  InputProps={{
-                    style: placeholderStyle,
-                  }}
-                />
-                <span className="x-delete fa-solid fa-xmark fa-lg"></span>
-              </div>
-              <div className="subtask">
-                <TextField
-                  placeholder="e.g. Drink coffee & smile "
-                  id="outlined-basic"
-                  variant="outlined"
-                  size="small"
-                  sx={{ width: "100%" }}
-                  InputProps={{
-                    style: placeholderStyle,
-                  }}
-                />
-                <span className="x-delete fa-solid fa-xmark fa-lg"></span>
-              </div>
-            </div>
-            <button
-              className={`add-subtask ${
-                theme === "dark" ? "darkMode" : "lightMode"
-              }`}
-            >
-              + Add New Subtask
-            </button>
+
             <FormControl fullWidth size="small" sx={{ mt: 1 }}>
               <label className={labelClassName} htmlFor="Status">
                 Status
               </label>
               <Select
-                labelId="demo-simple-select-label"
-                id="demo-simple-select"
-                value={status}
-                onChange={handleChange}
+                {...register("lists")}
+                name="lists"
+                labelId="lists-label"
+                error={!!errors.lists}
+                id="lists"
+                value={listId}
+                onChange={handleListSelect}
                 sx={{ color: theme === "dark" ? "white" : "black" }}
               >
-                <MenuItem value={"Todo"}>Todo</MenuItem>
-                <MenuItem value={"Doing"}>Doing</MenuItem>
-                <MenuItem value={"Done"}>Done</MenuItem>
+                {getSelectedBoard?.lists
+                  ? getSelectedBoard?.lists.map((list: any, index: number) => {
+                      return (
+                        <MenuItem
+                          key={index}
+                          value={list.id}
+                          sx={{ textTransform: "capitalize" }}
+                        >
+                          {list.name}
+                        </MenuItem>
+                      );
+                    })
+                  : null}
               </Select>
+              {errors.lists && <span style={{fontSize:'12px',margin:'6px 15px',color:'#d32f2f'}}>{errors.lists.message}</span>}
             </FormControl>
-            <button className="create-task">Create Task</button>
+            <button
+              className="create-task"
+              type="submit"
+            >
+              Create Task
+            </button>
           </div>
         </Box>
       </Modal>

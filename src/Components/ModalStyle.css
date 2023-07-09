@@ -106,3 +106,33 @@ button {
 .MuiInputBase-root{
   border: 2px solid #828FA340 !important;
 }
+
+.card-modal-header{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.create-newColumn-btn{
+  width: 100%;
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  background-color: #635fc7;
+}
+.create-newColumn-btn:hover{
+  background-color: #A8A4FF;
+}
+
+.DarkNewCol:hover{
+  background-color: #3E3F4E;
+}
+.LightNewCol:hover{
+  background-color: #635FC71A;
+}
+.DarkNewCol{
+  background-color: #2B2C3740;
+}
+.LightNewCol{
+  background-color: #E9EFFA;
+}

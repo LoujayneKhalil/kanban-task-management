@@ -1,4 +1,7 @@
 import * as React from "react";
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { registerSchema } from "../schema/formSchema";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Modal from "@mui/material/Modal";
@@ -7,7 +10,13 @@ import "../Components/ModalStyle.css";
 import { RootState, store } from "../Store/store";
 import { closeBoardModal } from "../features/modalSlice";
 import { useDispatch, useSelector } from "react-redux";
-import { createBoard, addList } from "../features/TrelloDataSlice";
+import {
+  createBoard,
+  addListToBoard,
+  updateBoardName,
+  archiveList,
+} from "../features/TrelloDataSlice";
+import { selectBoardName } from "../features/boardSlice";
 
 const style = {
   position: "absolute" as "absolute",
@@ -31,59 +40,74 @@ export default function BoardModalPopUp() {
   const dispatch = useDispatch();
   const theme = useSelector((state: RootState) => state.theme);
   const [newBoardName, setNewBoardName] = React.useState("");
-  const [listNames, setListNames] = React.useState<string[]>(["Todo", "Doing"]);
-  const [newListName, setNewListName] = React.useState("");
-
-  const isBoardModalOpen = useSelector(
-    (state: RootState) => state.modal.isBoardModalOpen
+  const [listNames, setListNames] = React.useState([""]);
+  const { isBoardModalOpen, isBoardEditModal } = useSelector(
+    (state: RootState) => state.modal
   );
+
+  const { selectedBoardId, selectedBoardName } = useSelector(
+    (state: RootState) => state.board
+  );
+  const { boards } = useSelector((state: RootState) => state.trello);
+
+  const getSelectedBoard = boards.find((board) => board.id === selectedBoardId);
 
   const handleClose = () => dispatch(closeBoardModal());
 
-  const handleAddBoard = async () => {
-    if (newBoardName.trim() !== "") {
-      const newBoard = {
-        name: newBoardName,
-        lists: [],
-      };
+  const handleUpdateBoard = (e: any) => {
+    e.preventDefault();
 
-      const createdBoard: any = await store.dispatch(createBoard(newBoard));
-      if (createdBoard) {
-        listNames.forEach(async (listName: any) => {
-          const newList = {
-            name: listName,
-          };
-          await store.dispatch(addList(newList));
-        });
-      }
+    store.dispatch(updateBoardName(selectedBoardId, newBoardName));
+    dispatch(selectBoardName(newBoardName));
+    setNewBoardName(selectedBoardName);
 
-      setNewBoardName("");
+    handleClose();
+  };
+
+  const handleSubmit = async (e: any) => {
+    e.preventDefault();
+
+    const newBoardAction = await store.dispatch(createBoard(newBoardName));
+    const newBoard = newBoardAction.payload;
+
+    try {
+      await Promise.all(
+        listNames.map(async (listName) => {
+          await store.dispatch(
+            addListToBoard({ boardId: newBoard.id, listName })
+          );
+        })
+      );
+    } catch (error) {
+      console.error("Failed to create lists:", error);
     }
     handleClose();
   };
-  const handleAddList = () => {
-    setListNames((prevListNames) => [...prevListNames, newListName]);
-    setNewListName("");
+
+  const handleListNameChange = (index: number, e: any) => {
+    const updatedListNames = [...listNames];
+    updatedListNames[index] = e.target.value;
+    setListNames(updatedListNames);
   };
 
-  const handleDeleteColumn = (e: any) => {
+  const handleAddList = () => {
+    setListNames([...listNames, ""]);
+  };
+
+  const handleDeleteColumn = (listId: any) => {
+    store.dispatch(archiveList(listId));
+  };
+
+  const handleRemoveColumn = (e: any) => {
     e.target.parentNode.remove();
   };
 
-  const handleListNameChange = (index: number, value: string) => {
-    setListNames((prevListNames) =>
-      prevListNames.map((name, i) => (i === index ? value : name))
-    );
-  };
-  const taskModel = (isEdit: boolean) => {
-    if (isEdit === true) {
-      return "Edit Board";
-    } else {
-      return "Add New Board";
-    }
-  };
-
   const labelClassName = `${theme === "dark" ? "dark-label" : "light-label"}`;
+
+  const {
+    register,
+    formState: { errors },
+  } = useForm({ resolver: yupResolver(registerSchema) });
 
   return (
     <div>
@@ -99,60 +123,94 @@ export default function BoardModalPopUp() {
             bgcolor: theme === "dark" ? "#2B2C37" : "background.paper",
           }}
         >
-          <Typography variant="h6" sx={{ fontWeight: "700", fontSize: "18px" }}>
-            {taskModel(false)}
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: "700",
+              fontSize: "18px",
+              color: theme === "dark" ? "#fff" : "#000112",
+            }}
+          >
+            {isBoardEditModal ? "Edit Board" : "Add New Board"}
           </Typography>
           <div className="modal-wrapper">
             <label className={labelClassName} htmlFor="title">
               Name
             </label>
             <TextField
+              {...register("title")}
+              name="title"
+              error={!!errors.title}
+              helperText={errors.title?.message}
               placeholder="e.g. Web Design"
               id="outlined-basic"
               variant="outlined"
               size="small"
-              value={newBoardName}
+              value={isBoardEditModal ? newBoardName : null}
               onChange={(e) => setNewBoardName(e.target.value)}
               InputProps={{
-                style: placeholderStyle,
+                style: {
+                  ...placeholderStyle,
+                  color: theme === "dark" ? "#fff" : "#000112",
+                },
               }}
             />
             <label className={labelClassName} htmlFor="Subtasks">
               Columns
             </label>
             <div className="subtask-list">
-              {listNames.map((listName, index) => (
-                <div key={index} className="subtask">
-                  <TextField
-                    value={listName}
-                    id="outlined-basic"
-                    variant="outlined"
-                    size="small"
-                    sx={{ width: "100%" }}
-                    onChange={(e) =>
-                      handleListNameChange(index, e.target.value)
-                    }
-                    InputProps={{
-                      style: placeholderStyle,
-                    }}
-                  />
-                  <span
-                    className="x-delete fa-solid fa-xmark fa-lg"
-                    onClick={(handleDeleteColumn)}
-                  ></span>
-                </div>
-              ))}
+              {getSelectedBoard?.lists
+                ? getSelectedBoard?.lists.map((list: any, index: number) => (
+                    <div key={list.id} className="subtask">
+                      <TextField
+                        {...register("column")}
+                        name="column"
+                        error={!!errors.column}
+                        helperText={errors.column?.message}
+                        placeholder="e.g. Submit the task"
+                        value={isBoardEditModal ? list.name : ""}
+                        id={list.id}
+                        variant="outlined"
+                        size="small"
+                        sx={{ width: "100%" }}
+                        onChange={(e) => handleListNameChange(index, e)}
+                        InputProps={{
+                          style: {
+                            ...placeholderStyle,
+                            color: theme === "dark" ? "#fff" : "#000112",
+                          },
+                        }}
+                      />
+                      <span
+                        className="x-delete fa-solid fa-xmark fa-lg"
+                        id={isBoardEditModal ? list.id : null}
+                        onClick={
+                          isBoardEditModal
+                            ? () =>
+                                handleDeleteColumn(
+                                  isBoardEditModal ? list.id : null
+                                )
+                            : handleRemoveColumn
+                        }
+                      ></span>
+                    </div>
+                  ))
+                : null}
             </div>
             <button
               className={`add-subtask ${
                 theme === "dark" ? "darkMode" : "lightMode"
               }`}
-              onClick={handleAddList}
+              onClick={isBoardEditModal ? (e) => console.log(e) : handleAddList}
+              style={{ display: isBoardEditModal ? "none" : "block" }}
             >
               + Add New Column
             </button>
-            <button className="create-task" onClick={handleAddBoard}>
-              Create New Board Task
+            <button
+              className="create-task"
+              onClick={isBoardEditModal ? handleUpdateBoard : handleSubmit}
+            >
+              {isBoardEditModal ? "Save Board" : "Create New Board Task"}
             </button>
           </div>
         </Box>

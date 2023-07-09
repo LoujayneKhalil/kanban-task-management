@@ -4,8 +4,11 @@ export interface ModalState {
   isTaskModalOpen: boolean;
   isBoardModalOpen: boolean;
   isTaskEditModal: boolean;
-  isBoardEditModal: boolean;
   isDeleteModalOpen: boolean;
+  isCardDeleteModal: boolean;
+  isCardModalOpen: boolean;
+  isBoardEditModal: boolean;
+  isNewColumnModalOpen: boolean;
 }
 
 const initialState: ModalState = {
@@ -14,6 +17,9 @@ const initialState: ModalState = {
   isTaskEditModal: false,
   isBoardEditModal: false,
   isDeleteModalOpen: false,
+  isCardDeleteModal: false,
+  isCardModalOpen: false,
+  isNewColumnModalOpen: false,
 };
 
 export const modalSlice = createSlice({
@@ -28,6 +34,7 @@ export const modalSlice = createSlice({
     },
     openBoardModal: (state) => {
       state.isBoardModalOpen = true;
+      state.isBoardEditModal = false;
     },
     closeBoardModal: (state) => {
       state.isBoardModalOpen = false;
@@ -36,13 +43,35 @@ export const modalSlice = createSlice({
       state.isTaskEditModal = true;
     },
     editBoardModal: (state) => {
+      state.isBoardModalOpen = true;
       state.isBoardEditModal = true;
+    },
+    addBoardModal: (state) => {
+      state.isBoardModalOpen = true;
+      state.isBoardEditModal = false;
     },
     openDeleteModal: (state) => {
       state.isDeleteModalOpen = true;
+      state.isCardDeleteModal = false;
+    },
+    openCardDeleteModal: (state) => {
+      state.isDeleteModalOpen = true;
+      state.isCardDeleteModal = true;
     },
     closeDeleteModal: (state) => {
       state.isDeleteModalOpen = false;
+    },
+    openCardModal: (state) => {
+      state.isCardModalOpen = true;
+    },
+    closeCardModal: (state) => {
+      state.isCardModalOpen = false;
+    },
+    openNewColumnModal: (state) => {
+      state.isNewColumnModalOpen = true;
+    },
+    closeNewColumnModal: (state) => {
+      state.isNewColumnModalOpen = false;
     },
   },
 });
@@ -55,6 +84,12 @@ export const {
   editBoardModal,
   editTaskModal,
   openDeleteModal,
+  openCardDeleteModal,
+  closeCardModal,
   closeDeleteModal,
+  openCardModal,
+  addBoardModal,
+  openNewColumnModal,
+  closeNewColumnModal,
 } = modalSlice.actions;
 export default modalSlice.reducer;
