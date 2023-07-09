@@ -40,6 +40,7 @@ export default function BoardModalPopUp() {
   const dispatch = useDispatch();
   const theme = useSelector((state: RootState) => state.theme);
   const [newBoardName, setNewBoardName] = React.useState("");
+  const [listname, setListName] = React.useState("");
   const [listNames, setListNames] = React.useState([""]);
   const { isBoardModalOpen, isBoardEditModal } = useSelector(
     (state: RootState) => state.modal
@@ -52,7 +53,10 @@ export default function BoardModalPopUp() {
 
   const getSelectedBoard = boards.find((board) => board.id === selectedBoardId);
 
-  const handleClose = () => dispatch(closeBoardModal());
+  const handleClose = () => {
+    dispatch(closeBoardModal());
+    setNewBoardName("");
+  };
 
   const handleUpdateBoard = (e: any) => {
     e.preventDefault();
@@ -159,21 +163,58 @@ export default function BoardModalPopUp() {
               Columns
             </label>
             <div className="subtask-list">
-              {getSelectedBoard?.lists
-                ? getSelectedBoard?.lists.map((list: any, index: number) => (
-                    <div key={list.id} className="subtask">
+              {isBoardEditModal
+                ? getSelectedBoard?.lists
+                  ? getSelectedBoard?.lists.map((list: any, index: number) => (
+                      <div key={list.id} className="subtask">
+                        <TextField
+                          {...register("column")}
+                          name="column"
+                          error={!!errors.column}
+                          helperText={errors.column?.message}
+                          placeholder="e.g. Submit the task"
+                          value={list.name}
+                          id={list.id}
+                          variant="outlined"
+                          size="small"
+                          sx={{ width: "100%" }}
+                          onChange={(e) =>
+                            handleListNameChange(index, e)
+                          }
+                          InputProps={{
+                            style: {
+                              ...placeholderStyle,
+                              color: theme === "dark" ? "#fff" : "#000112",
+                            },
+                          }}
+                        />
+                        <span
+                          className="x-delete fa-solid fa-xmark fa-lg"
+                          id={list.id}
+                          onClick={() =>
+                            handleDeleteColumn(
+                              isBoardEditModal ? list.id : null
+                            )
+                          }
+                        ></span>
+                      </div>
+                    ))
+                  : null
+                : listNames.map((listName, index) => (
+                    <div key={index} className="subtask">
                       <TextField
                         {...register("column")}
                         name="column"
                         error={!!errors.column}
                         helperText={errors.column?.message}
                         placeholder="e.g. Submit the task"
-                        value={isBoardEditModal ? list.name : ""}
-                        id={list.id}
+                        value={listName}
                         variant="outlined"
                         size="small"
                         sx={{ width: "100%" }}
-                        onChange={(e) => handleListNameChange(index, e)}
+                        onChange={(e) =>
+                          handleListNameChange(index, e)
+                        }
                         InputProps={{
                           style: {
                             ...placeholderStyle,
@@ -183,19 +224,11 @@ export default function BoardModalPopUp() {
                       />
                       <span
                         className="x-delete fa-solid fa-xmark fa-lg"
-                        id={isBoardEditModal ? list.id : null}
-                        onClick={
-                          isBoardEditModal
-                            ? () =>
-                                handleDeleteColumn(
-                                  isBoardEditModal ? list.id : null
-                                )
-                            : handleRemoveColumn
-                        }
+                        id={listName}
+                        onClick={handleRemoveColumn}
                       ></span>
                     </div>
-                  ))
-                : null}
+                  ))}
             </div>
             <button
               className={`add-subtask ${
